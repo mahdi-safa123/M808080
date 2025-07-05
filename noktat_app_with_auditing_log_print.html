@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>حاسبة السعر من النقاط</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f2f2f2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 400px;
+        }
+        input {
+            padding: 10px;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 10px;
+            font-size: 18px;
+            color: green;
+            font-weight: bold;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>حاسبة السعر من النقاط</h3>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+        <input type="text" id="refcode" placeholder="رمز الإحالة">
+        <input type="text" id="points" placeholder="عدد النقاط">
+        <button onclick="calculateAndSave()">احسب السعر وأضف للسجل</button>
+        <div id="result">
+    <br><h4>📑 سجل التدقيق:</h4>
+    <table id="auditLogTable">
+        <thead>
+            <tr>
+                <th>التاريخ</th>
+                <th>اسم المستخدم</th>
+                <th>رمز الإحالة</th>
+                <th>النقاط</th>
+                <th>السعر</th>
+                <th>وقت التدقيق</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <br>
+    <button onclick="printAuditOnly()">🖨️ طباعة سجل التدقيق فقط</button>
+</div>
+
+
+
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>اسم المستخدم</th>
+                    <th>رمز الإحالة</th>
+                    <th>النقاط</th>
+                    <th>السعر (دينار)</th><th>المراجعة</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    
+    <br><h4>📑 سجل التدقيق:</h4>
+    <table id="auditLogTable">
+        <thead>
+            <tr>
+                <th>التاريخ</th>
+                <th>اسم المستخدم</th>
+                <th>رمز الإحالة</th>
+                <th>النقاط</th>
+                <th>السعر</th>
+                <th>وقت التدقيق</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <br>
+    <button onclick="printAuditOnly()">🖨️ طباعة سجل التدقيق فقط</button>
+</div>
+
+
+
+    <script>
+        const exceptions = {
+            17500: 5000,
+            36000: 11000,
+            175000: 51000,
+            345000: 100000,
+            1555000: 456000,
+            3000000: 880000,
+            14500000: 4250000,
+            28000000: 8212000,
+            69000000: 20220000,
+            135000000: 39560000
+        };
+
+        const combined = {};
+        const keys = Object.keys(exceptions).map(Number);
+        for (let i = 0; i < keys.length; i++) {
+            combined[keys[i]] = exceptions[keys[i]];
+            for (let j = i + 1; j < keys.length; j++) {
+                let sum = keys[i] + keys[j];
+                combined[sum] = exceptions[keys[i]] + exceptions[keys[j]];
+            }
+        }
+
+        function calculateAndSave() {
+            const username = document.getElementById("username").value.trim();
+            const refcode = document.getElementById("refcode").value.trim();
+            let input = document.getElementById("points").value.replace(/,/g, "");
+            let points = parseInt(input);
+            const now = new Date().toLocaleDateString("ar-EG");
+
+            if (!username || !refcode || isNaN(points)) {
+                document.getElementById("result").innerText = "يرجى إدخال جميع الحقول بشكل صحيح.";
+                return;
+            }
+
+            let price = combined[points] ?? Math.round((points / 5000) * 1500);
+            document.getElementById("result").innerText = price.toLocaleString() + " دينار";
+
+            // إضافة إلى الجدول
+            let row = `<tr>
+                <td>${now}</td>
+                <td>${username}</td>
+                <td>${refcode}</td>
+                <td>${points.toLocaleString()}</td>
+                <td>${price.toLocaleString()}</td>
+            </tr>`;
+            
+    let table = document.querySelector("#logTable tbody");
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td>${now}</td>
+        <td>${username}</td>
+        <td>${refcode}</td>
+        <td>${points.toLocaleString()}</td>
+        <td>${price.toLocaleString()}</td>
+        <td><button onclick="markReviewed(this)">✔️ تدقيق</button></td>
+    `;
+    table.appendChild(tr);
+    
+        }
+    
+    function markReviewed(button) {
+        const row = button.closest('tr');
+        row.style.backgroundColor = "#e0ffe0"; // لون أخضر باهت
+        button.disabled = true;
+        
+    button.innerText = "✅ تم التدقيق";
+    const cols = Array.from(row.children).map(td => td.innerText);
+    const auditRow = document.createElement("tr");
+    const time = new Date().toLocaleTimeString("ar-EG");
+    auditRow.innerHTML = `<td>${cols[0]}</td><td>${cols[1]}</td><td>${cols[2]}</td><td>${cols[3]}</td><td>${cols[4]}</td><td>${time}</td>`;
+    document.querySelector("#auditLogTable tbody").appendChild(auditRow);
+    
+    }
+    
+    function printAuditOnly() {
+        const main = document.body.innerHTML;
+        const auditSection = document.getElementById("auditLogTable").outerHTML;
+        const style = `<style>
+            table { width: 100%; border-collapse: collapse; font-size: 14px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+            th { background-color: #f0f0f0; }
+        </style>`;
+        const printable = `<html><head><title>سجل التدقيق</title>${style}</head><body><h2>سجل التدقيق</h2>${auditSection}</body></html>`;
+        const newWindow = window.open("", "_blank");
+        newWindow.document.write(printable);
+        newWindow.document.close();
+        newWindow.print();
+    }
+    </script>
+
+
+</body>
+</html>
